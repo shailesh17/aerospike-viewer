@@ -1,0 +1,5 @@
+{
+  "name": "Aerospike Cluster Viewer",
+  "description": "A web application to view namespaces, sets, and records from an Aerospike database cluster. It uses AI to provide summaries of data schemas.",
+  "requestFramePermissions": []
+}
