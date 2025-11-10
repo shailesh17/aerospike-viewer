@@ -82,7 +82,10 @@ const RecordTable: React.FC<RecordTableProps> = ({ records, isLoading, selectedS
           </thead>
           <tbody className="bg-gray-900 divide-y divide-gray-800">
             {records.map((record, index) => (
-              <tr key={String(record.key)} className="hover:bg-gray-800/50 transition-colors">
+              <tr key={typeof record.key === 'object' && record.key !== null && 'data' in record.key && Array.isArray((record.key as any).data)
+                  ? bytesToHexString((record.key as any).data)
+                  : String(record.key)
+              } className="hover:bg-gray-800/50 transition-colors">
                 {headers.map((header) => {
                   if (header === '#') {
                     return (
