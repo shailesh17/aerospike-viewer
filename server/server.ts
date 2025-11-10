@@ -17,8 +17,19 @@ const PORT = 8080;
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 
-// Serve static files from the 'dist' directory
-app.use(express.static(path.join(__dirname, 'dist')));
+// Only serve frontend assets in production
+if (process.env.NODE_ENV === 'production') {
+    const frontendDistPath = path.join(__dirname, '..', 'dist');
+    app.use(express.static(frontendDistPath));
+
+    // Serve the main index.html for any other request
+    app.get('/', (req, res) => {
+        res.sendFile(path.join(frontendDistPath, 'index.html'));
+    });
+    app.get('/*', (req, res) => {
+        res.sendFile(path.join(frontendDistPath, 'index.html')); // For client-side routing
+    });
+}
 
 let client: Aerospike.Client | null = null;
 
@@ -271,22 +282,13 @@ app.post('/api/schema-summary', async (req: express.Request, res: express.Respon
     }
 });
 
-
 const projectRoot = __dirname; 
 const distDir = path.join(projectRoot, 'dist');
 const uuid = randomUUID();
 
-// Serve the main index.html for any other request
-app.get('/', (req, res) => {
-    res.sendFile(path.join(projectRoot, 'index.html'));
-});
 app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=UTF-8');
   res.send(`{"workspace": { "root": "${projectRoot}", "uuid": "${uuid}" } }`);
-});
-
-app.get('/*', (req, res) => {
-    res.sendFile(path.join(projectRoot, req.path));
 });
 
 app.listen(PORT, () => {

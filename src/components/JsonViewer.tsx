@@ -5,8 +5,28 @@ interface JsonViewerProps {
   data: object | any[];
 }
 
+const bytesToHexString = (bytes: number[]): string => {
+  return bytes
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+};
+
 const JsonViewer: React.FC<JsonViewerProps> = ({ data }) => {
-  const jsonString = JSON.stringify(data, null, 2);
+  const replacer = (key: string, value: any) => {
+    if (
+      value &&
+      typeof value === 'object' &&
+      'type' in value &&
+      value.type === 'Buffer' &&
+      'data' in value &&
+      Array.isArray(value.data)
+    ) {
+      return `0x${bytesToHexString(value.data)}`;
+    }
+    return value;
+  };
+
+  const jsonString = JSON.stringify(data, replacer, 2);
 
   const syntaxHighlight = (json: string) => {
     json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -28,7 +48,7 @@ const JsonViewer: React.FC<JsonViewerProps> = ({ data }) => {
   };
 
   return (
-    <pre className="text-xs bg-gray-900 p-2 rounded-md overflow-x-auto">
+    <pre className="text-xs text-gray-300 bg-gray-900 p-2 rounded-md overflow-x-auto">
       <code dangerouslySetInnerHTML={{ __html: syntaxHighlight(jsonString) }} />
     </pre>
   );

@@ -20,7 +20,7 @@ const NamespaceIcon: React.FC<{ isOpen: boolean }> = ({ isOpen }) => (
 );
 
 const SetIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 ml-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 ml-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
     </svg>
 );
@@ -64,7 +64,7 @@ const NamespaceTree: React.FC<NamespaceTreeProps> = ({
     <div className="w-full md:w-64 lg:w-80 bg-gray-900 p-4 overflow-y-auto">
       <div
         onClick={toggleTree}
-        className="flex items-center p-2 rounded-md cursor-pointer transition-colors hover:bg-gray-800"
+        className="flex items-center p-2 rounded-md cursor-pointer transition-colors hover:bg-gray-800 text-white"
       >
         <NamespaceIcon isOpen={isTreeOpen} />
         <h2 className="text-lg font-semibold text-white">Namespaces</h2>
@@ -78,10 +78,9 @@ const NamespaceTree: React.FC<NamespaceTreeProps> = ({
                 <div
                   onClick={() => toggleNamespace(ns)}
                   className={`flex items-center p-2 rounded-md cursor-pointer transition-colors ${selectedNamespace?.name === ns.name 
-                    ? 'bg-blue-600 bg-opacity-30' : 'hover:bg-gray-800'}`}
-                >
-                  <NamespaceIcon isOpen={isOpen} />
-                  <span className="font-medium">{ns.name}</span>
+                    ? 'bg-blue-600 bg-opacity-30 text-white' : 'hover:bg-gray-800 text-gray-300'}`}
+                    >                  <NamespaceIcon isOpen={isOpen} />
+                  <span className="font-medium text-gray-300">{ns.name}</span>
                   {loadingSets?.name === ns.name && <Spinner size="4" className="ml-auto" />}
                 </div>
                 {isOpen && setsByNamespace[ns.name] && (
@@ -94,7 +93,7 @@ const NamespaceTree: React.FC<NamespaceTreeProps> = ({
                           && selectedNamespace?.name === s.namespace.name ? 'bg-blue-500 text-white' : 'hover:bg-gray-800'}`}
                       >
                         <SetIcon />
-                        <span>{s.name} ({s.objects}): {formatBytes(s.data_used_bytes)}</span>
+                        <span className="text-gray-300">{s.name} ({s.objects}): {formatBytes(s.data_used_bytes)}</span>
                       </li>
                     ))}
                   </ul>

@@ -24,11 +24,12 @@ const bytesToHexString = (bytes: number[]): string => {
 const RecordTable: React.FC<RecordTableProps> = ({ records, isLoading, selectedSet, selectedNamespace, currentPage, totalRecords, hasMorePages, onPageChange}) => {
   const headers = useMemo(() => {
     if (records.length === 0) return [];
-    const headerSet = new Set<string>();
+    const binHeaderSet = new Set<string>();
     records.forEach(record => {
-      Object.keys(record.bins).forEach(bin => headerSet.add(bin));
+      Object.keys(record.bins).forEach(bin => binHeaderSet.add(bin));
     });
-    return ['#', 'PK', ...Array.from(headerSet)];
+    const binHeaders = Array.from(binHeaderSet).sort(); // Sort bin headers for consistent order
+    return ['#', 'PK', ...binHeaders];
   }, [records]);
 
   if (isLoading) {
@@ -111,8 +112,13 @@ const RecordTable: React.FC<RecordTableProps> = ({ records, isLoading, selectedS
                   // the issue where properties of objects with index signatures are not narrowed.
                   const binValue = record.bins[header];
                   return (
-                    <td key={`${String(record.key)}-${header}`} className="px-6 py-4 whitespace-nowrap align-top">
-                      {typeof binValue === 'object' && binValue !== null ? (
+                    <td
+                      key={`${String(record.key)}-${header}`}
+                      className={`px-6 py-4 align-top max-w-[200px] break-words`}
+                    >
+                      {typeof binValue === 'object' && binValue !== null && 'type' in binValue && (binValue as any).type === 'Buffer' && 'data' in binValue && Array.isArray((binValue as any).data) ? (
+                        <span className="text-sm text-gray-300 font-mono">0x{bytesToHexString((binValue as any).data)}</span>
+                      ) : typeof binValue === 'object' && binValue !== null ? (
                         <JsonViewer data={binValue} />
                       ) : (
                         <span className="text-sm text-gray-300">{String(binValue ?? 'null')}</span>

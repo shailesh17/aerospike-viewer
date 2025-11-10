@@ -1,11 +1,14 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
+    "./index.html", // Ensure it scans the public folder if index.html is there
+    "./public/index.html", // Ensure it scans the public folder if index.html is there
     "./index.html",
-    "./**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: "media", // or 'class'
   theme: {
     extend: {},
   },
   plugins: [],
-}
+};
