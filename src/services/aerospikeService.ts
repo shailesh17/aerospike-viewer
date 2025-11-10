@@ -1,4 +1,4 @@
-import { Namespace, Set, Record } from '../types';
+import { Namespace, Set as SetType, Record } from '../types';
 
 // The backend server is expected to be running on this port
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -36,14 +36,14 @@ class AerospikeApiService {
         return data.namespaces.map((name: string) => ({ name }));
     }
 
-    async getSets(namespace: string): Promise<Set[]> {
-        const response = await fetch(`${API_BASE_URL}/namespaces/${namespace}/sets`);
+    async getSets(namespace: Namespace): Promise<SetType[]> {
+        const response = await fetch(`${API_BASE_URL}/namespaces/${namespace.name}/sets`);
         const data = await handleResponse(response);
-        return data.sets.map((name: string) => ({ name, namespace }));
+        return data.sets.map((set: { name: string, objects: number, data_used_bytes: number }) => ({ ...set, namespace: namespace.name }));
     }
 
-    async getRecords(namespace: string, set: string): Promise<Record[]> {
-        const response = await fetch(`${API_BASE_URL}/namespaces/${namespace}/sets/${set}/records`);
+    async getRecords(namespace: Namespace, set: SetType): Promise<Record[]> {
+        const response = await fetch(`${API_BASE_URL}/namespaces/${namespace.name}/sets/${set.name}/records`);
         return handleResponse(response);
     }
 }

@@ -5,7 +5,9 @@ export interface Namespace {
 
 export interface Set {
   name: string;
-  namespace: string;
+  objects: number;
+  data_used_bytes: number;
+  namespace: Namespace;
 }
 
 export type BinValue = string | number | boolean | null | object | any[];

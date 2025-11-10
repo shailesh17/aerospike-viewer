@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Namespace, Record, SetsByNamespace } from './types';
+import { Namespace, Record, SetsByNamespace, Set as SetType } from './types';
 import { aerospikeService } from './services/aerospikeService';
 import { getSchemaSummary } from './services/geminiService';
 import NamespaceTree from './components/NamespaceTree';
@@ -19,11 +19,11 @@ const App: React.FC = () => {
     const [setsByNamespace, setSetsByNamespace] = useState<SetsByNamespace>({});
     const [records, setRecords] = useState<Record[]>([]);
 
-    const [selectedNamespace, setSelectedNamespace] = useState<string | null>(null);
-    const [selectedSet, setSelectedSet] = useState<string | null>(null);
+    const [selectedNamespace, setSelectedNamespace] = useState<Namespace | null>(null);
+    const [selectedSet, setSelectedSet] = useState<SetType | null>(null);
 
     const [loadingNamespaces, setLoadingNamespaces] = useState<boolean>(false);
-    const [loadingSets, setLoadingSets] = useState<string | null>(null);
+    const [loadingSets, setLoadingSets] = useState<Namespace | null>(null);
     const [loadingRecords, setLoadingRecords] = useState<boolean>(false);
 
     const [isSummaryModalOpen, setIsSummaryModalOpen] = useState<boolean>(false);
@@ -70,20 +70,18 @@ const App: React.FC = () => {
         }
     }, [isConnected]);
 
-    const handleSelectNamespace = useCallback((namespace: string) => {
+    const handleSelectNamespace = useCallback((namespace: Namespace) => {
         setSelectedNamespace(namespace);
-        if (!setsByNamespace[namespace]) {
-            setLoadingSets(namespace);
-            aerospikeService.getSets(namespace)
-                .then(sets => {
-                    setSetsByNamespace(prev => ({ ...prev, [namespace]: sets }));
-                })
-                .catch(err => setError(err.message))
-                .finally(() => setLoadingSets(null));
-        }
-    }, [setsByNamespace]);
+        setLoadingSets(namespace);
+        aerospikeService.getSets(namespace)
+            .then(sets => {
+                setSetsByNamespace(prev => ({ ...prev, [namespace.name]: sets }));
+            })
+            .catch(err => setError(err.message))
+            .finally(() => setLoadingSets(null));
+    }, [setSetsByNamespace, setSelectedNamespace, setLoadingSets, setError]);
 
-    const handleSelectSet = useCallback(async (namespace: string, set: string) => {
+    const handleSelectSet = useCallback(async (namespace: Namespace, set: SetType) => {
         setSelectedNamespace(namespace);
         setSelectedSet(set);
         setLoadingRecords(true);
@@ -95,7 +93,7 @@ const App: React.FC = () => {
             setRecords(fetchedRecords);
             
             setIsSummaryModalOpen(true); 
-            const summary = await getSchemaSummary(fetchedRecords, set);
+            const summary = await getSchemaSummary(fetchedRecords, set.name);
             setSchemaSummary(summary);
 
         } catch (err: any) {
@@ -209,7 +207,7 @@ const App: React.FC = () => {
             <Modal
                 isOpen={isSummaryModalOpen}
                 onClose={() => setIsSummaryModalOpen(false)}
-                title={`AI Schema Summary for '${selectedSet}'`}
+                title={`AI Schema Summary for '${selectedSet?.name}'`}
             >
                 {loadingSummary ? (
                      <div className="flex flex-col items-center justify-center h-48">

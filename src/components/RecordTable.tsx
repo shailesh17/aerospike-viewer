@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
-import { Record } from '../types';
+import { Namespace, Record, Set as SetType } from '../types';
 import JsonViewer from './JsonViewer';
 import Spinner from './Spinner';
 
 interface RecordTableProps {
   records: Record[];
   isLoading: boolean;
-  selectedSet: string | null;
-  selectedNamespace: string | null;
+  selectedSet: SetType | null;
+  selectedNamespace: Namespace | null;
 }
 
 const RecordTable: React.FC<RecordTableProps> = ({ records, isLoading, selectedSet, selectedNamespace }) => {
@@ -42,7 +42,7 @@ const RecordTable: React.FC<RecordTableProps> = ({ records, isLoading, selectedS
   if (records.length === 0 && selectedSet) {
      return (
       <div className="flex-1 flex justify-center items-center">
-        <p className="text-xl text-gray-500">No records found in {selectedNamespace}/{selectedSet}</p>
+        <p className="text-xl text-gray-500">No records found in {selectedNamespace?.name}/{selectedSet?.name}</p>
       </div>
     );
   }
@@ -51,7 +51,7 @@ const RecordTable: React.FC<RecordTableProps> = ({ records, isLoading, selectedS
   return (
     <div className="flex-1 p-6 overflow-auto">
       <h2 className="text-2xl font-bold mb-4 text-white">
-        Records for <span className="text-blue-400">{selectedNamespace}/{selectedSet}</span> ({records.length} shown)
+        Records for <span className="text-blue-400">{selectedNamespace?.name}/{selectedSet?.name}</span> ({records.length} shown)
       </h2>
       <div className="overflow-x-auto bg-gray-900 rounded-lg shadow">
         <table className="min-w-full divide-y divide-gray-700">

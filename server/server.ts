@@ -71,29 +71,35 @@ app.post('/api/disconnect', async (req: express.Request, res: express.Response) 
 // --- Data Fetching API ---
 
 // FIX: Explicitly use express.Response type.
-const checkConnection = (res: express.Response): boolean => {
+const checkConnection = (): Aerospike.Client => {
     if (!client || !client.isConnected()) {
-        res.status(400).json({ message: 'Not connected to Aerospike' });
-        return false;
+        throw new Error('Not connected to Aerospike');
     }
-    return true;
+    return client;
 };
 
 // FIX: Explicitly use express.Request and express.Response types.
 app.get('/api/namespaces', async (req: express.Request, res: express.Response) => {
-    if (!checkConnection(res)) return;
     try {
+        const client = checkConnection();
         // FIX: Use infoAny to query a random node, as info() requires a specific host.
-        const info: string = await client!.infoAny('namespaces');
+        const info: string = await client.infoAny('namespaces');
+
         console.log('--- Raw namespaces info from Aerospike:');
         console.log(info);
         console.log('---');
-        const namespaces = info.split(';').filter(ns => ns); // filter out empty strings
+        const namespaces = info.split(';').map(ns => {
+            const parts = ns.split('\t');
+            return parts.length > 1 ? parts[1].trim() : null;
+        }).filter((s): s is string => s !== null && s !== 'namespaces');
         console.log('--- Parsed namespaces:');
         console.log(namespaces);
         console.log('---');
         res.json({ namespaces, raw: info });
     } catch (error: any) {
+        if (error.message === 'Not connected to Aerospike') {
+            return res.status(400).json({ message: error.message });
+        }
         console.error('--- Error fetching namespaces:');
         console.error(error);
         console.error('---');
@@ -103,33 +109,52 @@ app.get('/api/namespaces', async (req: express.Request, res: express.Response) =
 
 // FIX: Explicitly use express.Request and express.Response types.
 app.get('/api/namespaces/:namespace/sets', async (req: express.Request, res: express.Response) => {
-    if (!checkConnection(res)) return;
     const { namespace } = req.params;
     try {
+        const client = checkConnection();
         // FIX: Use infoAny to query a random node.
-        const info: string = await client!.infoAny(`sets/${namespace}`);
+        const info: string = await client.infoAny(`sets/${namespace}`);
+        console.log(`--- Raw sets info for namespace "${namespace}":`);
+        console.log(info);
+        console.log('---');
         // The info string format is ns_name=test:set_name=users:n_objects=1...;...
-        const sets = info
-            .split(';')
-            .map(part => {
-                const match = part.match(/set_name=([^:]+)/);
-                return match ? match[1] : null;
-            })
-            .filter((s): s is string => s !== null);
+        const sets = info.split(';').map(setInfoString => {
+            if (!setInfoString.includes('set=')) return null;
+
+            const setDetails: { [key: string]: string | number } = {};
+            setInfoString.split(':').forEach(part => {
+                const [key, ...valueParts] = part.split('=');
+                const value = valueParts.join('=');
+                if (key && value) {
+                    if (key === 'objects' || key === 'data_used_bytes') {
+                        setDetails[key] = parseInt(value, 10);
+                    } else if (key === 'set') {
+                        setDetails['name'] = value;
+                    }
+                }
+            });
+            return setDetails.name && !String(setDetails.name).startsWith('<') ? setDetails : null;
+        }).filter((s): s is { [key: string]: string | number } => s !== null);
+        console.log('--- Parsed sets:');
+        console.log(sets);
+        console.log('---');
         res.json({ sets });
     } catch (error: any) {
+        if (error.message === 'Not connected to Aerospike') {
+            return res.status(400).json({ message: error.message });
+        }
         res.status(500).json({ message: error.message });
     }
 });
 
 // FIX: Explicitly use express.Request and express.Response types.
 app.get('/api/namespaces/:namespace/sets/:set/records', async (req: express.Request, res: express.Response) => {
-    if (!checkConnection(res)) return;
     const { namespace, set } = req.params;
     try {
+        const client = checkConnection();
         // FIX: Cast the options object to `any` to work around an incorrect type definition in the aerospike library.
         // The library's JS code expects a `policy` object here, but the TS types incorrectly forbid it.
-        const scan = client!.scan(namespace, set, { policy: { maxRecords: 100 } } as any);
+        const scan = client.scan(namespace, set, { policy: { maxRecords: 100 } } as any);
         const stream = scan.foreach();
         const records: any[] = [];
         
@@ -154,6 +179,9 @@ app.get('/api/namespaces/:namespace/sets/:set/records', async (req: express.Requ
         });
 
     } catch (error: any) {
+        if (error.message === 'Not connected to Aerospike') {
+            return res.status(400).json({ message: error.message });
+        }
         res.status(500).json({ message: error.message });
     }
 });
