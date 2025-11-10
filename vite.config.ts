@@ -7,7 +7,7 @@ import autoprefixer from 'autoprefixer';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), ''); // Load .env from project root
     return {
-      root: '.', // Project root is the current directory
+      root: 'src', // Project root is the current directory
       publicDir: 'public', // Static assets are in ./public
       server: {
         port: 5173, // Standard Vite dev server port
@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
         emptyOutDir: true,
         rollupOptions: {
           input: {
-            main: path.resolve(__dirname, 'public/index.html'), // Entry HTML file
+            main: path.resolve(__dirname, 'src/index.html'), // Entry HTML file
           },
         },
       },
