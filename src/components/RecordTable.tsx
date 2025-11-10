@@ -14,6 +14,13 @@ interface RecordTableProps {
   onPageChange: (page: number) => void;
 }
 
+const bytesToHexString = (bytes: number[]): string => {
+  return bytes
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+};
+
+
 const RecordTable: React.FC<RecordTableProps> = ({ records, isLoading, selectedSet, selectedNamespace, currentPage, totalRecords, hasMorePages, onPageChange}) => {
   const headers = useMemo(() => {
     if (records.length === 0) return [];
@@ -21,7 +28,7 @@ const RecordTable: React.FC<RecordTableProps> = ({ records, isLoading, selectedS
     records.forEach(record => {
       Object.keys(record.bins).forEach(bin => headerSet.add(bin));
     });
-    return ['PK', ...Array.from(headerSet)];
+    return ['#', 'PK', ...Array.from(headerSet)];
   }, [records]);
 
   if (isLoading) {
@@ -53,12 +60,12 @@ const RecordTable: React.FC<RecordTableProps> = ({ records, isLoading, selectedS
 
 
   return (
-    <div className="flex-1 p-6 overflow-auto">
+    <div className="flex-1 p-6 flex flex-col overflow-hidden">
       <h2 className="text-2xl font-bold mb-4 text-white">
         Records for <span className="text-blue-400">{selectedNamespace?.name}/{selectedSet?.name}</span> 
         ({records.length} of {totalRecords > records.length ? `~${totalRecords}` : records.length} shown)
       </h2>
-      <div className="overflow-x-auto bg-gray-900 rounded-lg shadow">
+      <div className="flex-1 overflow-auto bg-gray-900 rounded-lg shadow">
         <table className="min-w-full divide-y divide-gray-700">
           <thead className="bg-gray-800">
             <tr>
@@ -74,13 +81,25 @@ const RecordTable: React.FC<RecordTableProps> = ({ records, isLoading, selectedS
             </tr>
           </thead>
           <tbody className="bg-gray-900 divide-y divide-gray-800">
-            {records.map((record) => (
+            {records.map((record, index) => (
               <tr key={String(record.key)} className="hover:bg-gray-800/50 transition-colors">
                 {headers.map((header) => {
+                  if (header === '#') {
+                    return (
+                      <td key={`${String(record.key)}-#`} className="px-6 py-4 whitespace-nowrap align-top text-sm text-gray-400">
+                        {(currentPage * 100) + index + 1}
+                      </td>
+                    );
+                  }
                   if (header === 'PK') {
                     return (
-                      <td key={`${String(record.key)}-PK`} className="px-6 py-4 whitespace-nowrap align-top font-mono text-sm text-cyan-400">
-                        {typeof record.key === 'object' ? JSON.stringify(record.key) : String(record.key)}
+                      <td key={`${String(record.key)}-PK`} className="px-6 py-4 whitespace-nowrap align-top font-mono text-sm text-cyan-400" title={typeof record.key === 'object' ? JSON.stringify(record.key) : String(record.key)}>
+                        {(() => {
+                          if (typeof record.key === 'object' && record.key !== null && 'data' in record.key && Array.isArray((record.key as any).data)) {
+                            return bytesToHexString((record.key as any).data);
+                          }
+                          return typeof record.key === 'object' ? JSON.stringify(record.key) : String(record.key);
+                        })()}
                       </td>
                     );
                   }

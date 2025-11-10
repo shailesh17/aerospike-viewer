@@ -49,11 +49,14 @@ class AerospikeApiService {
     }
 
     async getRecords(namespace: Namespace, set: SetType, nextToken: string | null = null): Promise<{records: RecordType[], nextToken: string | null}> {
-        let url = `${API_BASE_URL}/namespaces/${namespace.name}/sets/${set.name}/records`;
-        if (nextToken) {
-            url += `?nextToken=${encodeURIComponent(nextToken)}`;
-        }
-        const response = await fetch(url);
+        const url = `${API_BASE_URL}/namespaces/${namespace.name}/sets/${set.name}/records`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ nextToken }),
+        });
         return handleResponse(response);
     }
 }

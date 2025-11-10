@@ -180,9 +180,9 @@ app.get('/api/namespaces/:namespace/sets', async (req: express.Request, res: exp
 });
 
 // FIX: Explicitly use express.Request and express.Response types.
-app.get('/api/namespaces/:namespace/sets/:set/records', async (req: express.Request, res: express.Response) => {
-    const { namespace, set } = req.params
-    const { nextToken } = req.query;
+app.post('/api/namespaces/:namespace/sets/:set/records', async (req: express.Request, res: express.Response) => {
+    const { namespace, set } = req.params;
+    const { nextToken } = req.body;
     try {
         const client = checkConnection();
 
