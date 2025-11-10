@@ -19,7 +19,7 @@ export interface Set {
 export type BinValue = string | number | boolean | null | object | any[];
 
 export interface Record {
-  key: string;
+  key: string | Buffer;
   bins: {
     [key: string]: BinValue;
   };

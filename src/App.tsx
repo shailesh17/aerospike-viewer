@@ -27,6 +27,9 @@ const App: React.FC = () => {
     const [loadingSets, setLoadingSets] = useState<Namespace | null>(null);
     const [loadingRecords, setLoadingRecords] = useState<boolean>(false);
 
+    const [recordPages, setRecordPages] = useState<{ [setKey: string]: { records: Record[], tokens: (string | null)[] } }>({});
+    const [currentPage, setCurrentPage] = useState(0);
+
     const [isSummaryModalOpen, setIsSummaryModalOpen] = useState<boolean>(false);
     const [schemaSummary, setSchemaSummary] = useState<string>('');
     const [loadingSummary, setLoadingSummary] = useState<boolean>(false);
@@ -90,16 +93,27 @@ const App: React.FC = () => {
     }, [setSetsByNamespace, setSelectedNamespace, setLoadingSets, setError]);
 
     const handleSelectSet = useCallback(async (namespace: Namespace, set: SetType) => {
+        const setKey = `${namespace.name}/${set.name}`;
         setSelectedNamespace(namespace);
         setSelectedSet(set);
+        setCurrentPage(0);
+
+        if (recordPages[setKey]) {
+            setRecords(recordPages[setKey].records.slice(0, 100));
+            return;
+        }
+
         setLoadingRecords(true);
         setLoadingSummary(true);
         setRecords([]);
         setError(null);
         try {
-            console.log(`got you namespace records for ${namespace} and ${set}`);
-            const fetchedRecords = await aerospikeService.getRecords(namespace, set);
+            const { records: fetchedRecords, nextToken } = await aerospikeService.getRecords(namespace, set);
             setRecords(fetchedRecords);
+            setRecordPages(prev => ({
+                ...prev,
+                [setKey]: { records: fetchedRecords, tokens: [null, nextToken] }
+            }));
             
             const summary = ''; // TODO await getSchemaSummary(fetchedRecords, set.name);
             setSchemaSummary(summary);
@@ -112,6 +126,23 @@ const App: React.FC = () => {
             setLoadingSummary(false);
         }
     }, []);
+
+    const fetchRecordPage = async (page: number) => {
+        if (!selectedNamespace || !selectedSet) return;
+        const setKey = `${selectedNamespace.name}/${selectedSet.name}`;
+        const pageInfo = recordPages[setKey];
+        const token = pageInfo.tokens[page];
+
+        setLoadingRecords(true);
+        const { records: newRecords, nextToken: newNextToken } = await aerospikeService.getRecords(selectedNamespace, selectedSet, token);
+        setLoadingRecords(false);
+
+        const updatedRecords = [...pageInfo.records, ...newRecords];
+        const updatedTokens = [...pageInfo.tokens, newNextToken];
+        setRecordPages(prev => ({ ...prev, [setKey]: { records: updatedRecords, tokens: updatedTokens } }));
+        setRecords(updatedRecords.slice(page * 100, (page + 1) * 100));
+        setCurrentPage(page);
+    };
 
     const renderContent = () => {
         if (!isConnected) {
@@ -204,6 +235,10 @@ const App: React.FC = () => {
                         isLoading={loadingRecords}
                         selectedSet={selectedSet}
                         selectedNamespace={selectedNamespace}
+                        currentPage={currentPage}
+                        totalRecords={recordPages[`${selectedNamespace?.name}/${selectedSet?.name}`]?.records.length || 0}
+                        hasMorePages={!!recordPages[`${selectedNamespace?.name}/${selectedSet?.name}`]?.tokens[currentPage + 1]}
+                        onPageChange={fetchRecordPage}
                     />
                 </div>
             </>

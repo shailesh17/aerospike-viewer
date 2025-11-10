@@ -1,4 +1,4 @@
-import { Namespace, Set as SetType, Record, ServerStats } from '../types';
+import { Namespace, Set as SetType, Record as RecordType, ServerStats } from '../types';
 
 // The backend server is expected to be running on this port
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -48,8 +48,12 @@ class AerospikeApiService {
             ({ ...set, namespace: namespace }));
     }
 
-    async getRecords(namespace: Namespace, set: SetType): Promise<Record[]> {
-        const response = await fetch(`${API_BASE_URL}/namespaces/${namespace.name}/sets/${set.name}/records`);
+    async getRecords(namespace: Namespace, set: SetType, nextToken: string | null = null): Promise<{records: RecordType[], nextToken: string | null}> {
+        let url = `${API_BASE_URL}/namespaces/${namespace.name}/sets/${set.name}/records`;
+        if (nextToken) {
+            url += `?nextToken=${encodeURIComponent(nextToken)}`;
+        }
+        const response = await fetch(url);
         return handleResponse(response);
     }
 }

@@ -181,32 +181,43 @@ app.get('/api/namespaces/:namespace/sets', async (req: express.Request, res: exp
 
 // FIX: Explicitly use express.Request and express.Response types.
 app.get('/api/namespaces/:namespace/sets/:set/records', async (req: express.Request, res: express.Response) => {
-    const { namespace, set } = req.params;
+    const { namespace, set } = req.params
+    const { nextToken } = req.query;
     try {
         const client = checkConnection();
-        // FIX: Cast the options object to `any` to work around an incorrect type definition in the aerospike library.
-        // The library's JS code expects a `policy` object here, but the TS types incorrectly forbid it.
-        const scan = client.scan(namespace, set, { policy: { maxRecords: 100 } } as any);
-        const stream = scan.foreach();
+
+        const scanOptions: Aerospike.ScanOptions = { paginate: true };
+        if (nextToken && typeof nextToken === 'string') {
+            scanOptions.scanState = JSON.parse(Buffer.from(nextToken, 'base64').toString());
+        }
+
+        const scan = client.scan(namespace, set, scanOptions);
+        const policy: Aerospike.ScanPolicy = { maxRecords: 100 };
+
+        const stream = scan.foreach(policy);
         const records: any[] = [];
         
         stream.on('data', (record) => {
             records.push({
-                key: record.key.key,
+                key: record.key.key || record.key.digest,
                 bins: record.bins,
             });
         });
 
         stream.on('error', (error) => {
             console.error('Scan error:', error);
-            if (!res.headersSent) {
+            // AEROSPIKE_QUERY_END is returned when pagination is done.
+            if (error.code === Aerospike.status.AEROSPIKE_QUERY_END) {
+                return res.json({ records, nextToken: null });
+            } else if (!res.headersSent) {
                 res.status(500).json({ message: 'Error scanning records' });
             }
         });
 
-        stream.on('end', () => {
-             if (!res.headersSent) {
-                res.json(records);
+        stream.on('end', (scanState) => {
+            if (!res.headersSent) {
+                const next = scanState ? Buffer.from(JSON.stringify(scanState)).toString('base64') : null;
+                res.json({ records, nextToken: next });
             }
         });
 
