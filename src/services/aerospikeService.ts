@@ -39,7 +39,8 @@ class AerospikeApiService {
     async getSets(namespace: Namespace): Promise<SetType[]> {
         const response = await fetch(`${API_BASE_URL}/namespaces/${namespace.name}/sets`);
         const data = await handleResponse(response);
-        return data.sets.map((set: { name: string, objects: number, data_used_bytes: number }) => ({ ...set, namespace: namespace.name }));
+        return data.sets.map((set: { name: string, objects: number, data_used_bytes: number }) => 
+            ({ ...set, namespace: namespace }));
     }
 
     async getRecords(namespace: Namespace, set: SetType): Promise<Record[]> {

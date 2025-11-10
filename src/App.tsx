@@ -72,6 +72,8 @@ const App: React.FC = () => {
 
     const handleSelectNamespace = useCallback((namespace: Namespace) => {
         setSelectedNamespace(namespace);
+        setSelectedSet(null);
+        setRecords([]);
         setLoadingSets(namespace);
         aerospikeService.getSets(namespace)
             .then(sets => {
@@ -89,12 +91,13 @@ const App: React.FC = () => {
         setRecords([]);
         setError(null);
         try {
+            console.log(`got you namespace records for ${namespace} and ${set}`);
             const fetchedRecords = await aerospikeService.getRecords(namespace, set);
             setRecords(fetchedRecords);
             
-            setIsSummaryModalOpen(true); 
-            const summary = await getSchemaSummary(fetchedRecords, set.name);
+            const summary = ''; // TODO await getSchemaSummary(fetchedRecords, set.name);
             setSchemaSummary(summary);
+            setIsSummaryModalOpen(false);  // TODO - change if need
 
         } catch (err: any) {
             setError(err.message);
