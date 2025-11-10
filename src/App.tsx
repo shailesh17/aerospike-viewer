@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Namespace, Record, SetsByNamespace, Set as SetType } from './types';
+import { Namespace, Record, SetsByNamespace, Set as SetType, ServerStats } from './types';
 import { aerospikeService } from './services/aerospikeService';
 import { getSchemaSummary } from './services/geminiService';
 import NamespaceTree from './components/NamespaceTree';
@@ -14,6 +14,7 @@ const App: React.FC = () => {
     const [host, setHost] = useState<string>('localhost');
     const [port, setPort] = useState<string>('3101');
     const [useAlternate, setUseAlternate] = useState<boolean>(true);
+    const [serverStats, setServerStats] = useState<ServerStats | null>(null);
 
     const [namespaces, setNamespaces] = useState<Namespace[]>([]);
     const [setsByNamespace, setSetsByNamespace] = useState<SetsByNamespace>({});
@@ -62,11 +63,16 @@ const App: React.FC = () => {
     
     useEffect(() => {
         if (isConnected) {
+            setServerStats(null);
             setLoadingNamespaces(true);
-            aerospikeService.getNamespaces()
-                .then(setNamespaces)
-                .catch(err => setError(err.message))
-                .finally(() => setLoadingNamespaces(false));
+            Promise.all([
+                aerospikeService.getNamespaces(),
+                aerospikeService.getStats()
+            ]).then(([namespaces, stats]) => {
+                setNamespaces(namespaces);
+                setServerStats(stats);
+            }).catch(err => setError(err.message))
+            .finally(() => setLoadingNamespaces(false));
         }
     }, [isConnected]);
 
@@ -170,7 +176,7 @@ const App: React.FC = () => {
         return (
             <>
                 <header className="flex items-center justify-between p-4 bg-gray-900 border-b border-gray-800 shrink-0">
-                    <h1 className="text-xl font-bold text-white">Aerospike Viewer</h1>
+                    <h1 className="text-xl font-bold text-white">Aerospike Viewer <span className="text-sm font-normal text-gray-400">v{serverStats?.version} - {serverStats?.totalObjects} - {serverStats?.uptime}</span></h1>
                     <div className="flex items-center gap-4">
                          <span className="text-sm text-gray-400">
                             Connected to: <span className="font-semibold text-gray-200">{host}:{port}</span>

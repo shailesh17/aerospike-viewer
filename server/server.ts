@@ -78,6 +78,38 @@ const checkConnection = (): Aerospike.Client => {
     return client;
 };
 
+// --- Server Stats API ---
+app.get('/api/stats', async (req: express.Request, res: express.Response) => {
+    try {
+        const client = checkConnection();
+
+        // Fetch multiple info commands concurrently
+        const [buildInfo, statsInfo, nsInfo] = await Promise.all([
+            client.infoAny('build'),
+            client.infoAny('statistics'),
+            client.infoAny('namespaces')
+        ]);
+
+        // Parse version from build info
+        const version = buildInfo;
+
+        // Parse uptime from statistics
+        const uptimeMatch = statsInfo.match(/uptime=(\d+)/);
+        const uptime = uptimeMatch ? parseInt(uptimeMatch[1], 10) : 0;
+
+        // Parse and sum objects from namespace info
+        const totalObjects = nsInfo.split(';').reduce((sum, ns) => {
+            const objectsMatch = ns.match(/objects=(\d+)/);
+            return sum + (objectsMatch ? parseInt(objectsMatch[1], 10) : 0);
+        }, 0);
+
+        res.json({ version, uptime, totalObjects });
+
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // FIX: Explicitly use express.Request and express.Response types.
 app.get('/api/namespaces', async (req: express.Request, res: express.Response) => {
     try {

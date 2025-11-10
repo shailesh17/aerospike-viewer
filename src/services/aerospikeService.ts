@@ -1,4 +1,4 @@
-import { Namespace, Set as SetType, Record } from '../types';
+import { Namespace, Set as SetType, Record, ServerStats } from '../types';
 
 // The backend server is expected to be running on this port
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -27,6 +27,11 @@ class AerospikeApiService {
         const response = await fetch(`${API_BASE_URL}/disconnect`, {
             method: 'POST',
         });
+        return handleResponse(response);
+    }
+
+    async getStats(): Promise<ServerStats> {
+        const response = await fetch(`${API_BASE_URL}/stats`);
         return handleResponse(response);
     }
 

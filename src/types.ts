@@ -1,4 +1,10 @@
 
+export interface ServerStats {
+  version: string;
+  uptime: number;
+  totalObjects: number;
+}
+
 export interface Namespace {
   name: string;
 }
