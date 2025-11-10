@@ -4,8 +4,7 @@ A modern, web-based UI for browsing and analyzing your Aerospike database, compl
 
 This tool provides a clean and efficient interface to connect to your Aerospike cluster, explore namespaces, view sets and their records, and gain insights into your data structures. It is built as a full-stack TypeScript application and is fully containerized with Docker for easy deployment.
 
-![Aerospike Viewer Screenshot](https://user-images.githubusercontent.com/12345/placeholder.png)
-*(Replace this with a screenshot of the application)*
+![Aerospike Viewer Screenshot](./assets/aerospike-viewer-screenshot.png)
 
 ---
 
